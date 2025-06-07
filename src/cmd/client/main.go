@@ -9,17 +9,48 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
+func loadConfig() shared.Config {
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	host := os.Getenv("SERVER_HOST")
+	if host == "" {
+		host = "0.0.0.0"
+	}
+
+	tickRate := 20 // default
+	if val := os.Getenv("TICK_RATE"); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			tickRate = i
+		}
+	}
+
+	config := shared.Config{
+		Port:     port,
+		Host:     host,
+		TickRate: tickRate,
+	}
+
+	log.Printf("Server config - Host: %s, Port: %s, TickRate: %d", host, port, tickRate)
+
+	return config
+}
+
 func main() {
+	config := loadConfig()
 	// Generate a unique session ID
 	sessionID := fmt.Sprintf("client-%d", time.Now().Unix())
 
 	// Server URL
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+	u := url.URL{Scheme: "ws", Host: config.Host + ":" + config.Port, Path: "/ws"}
 	q := u.Query()
 	q.Set("session", sessionID)
 	u.RawQuery = q.Encode()

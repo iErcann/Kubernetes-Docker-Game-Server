@@ -6,6 +6,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Configuration struct
+type Config struct {
+	Port     string // Server port, default is "8080"
+	Host     string // Default "0.0.0.0"
+	TickRate int
+}
+
 // Game world state shared between client and server
 type AnimationState int
 

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -12,6 +15,35 @@ import (
 
 	"github.com/gorilla/websocket"
 )
+
+func loadConfig() shared.Config {
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	host := os.Getenv("SERVER_HOST")
+	if host == "" {
+		host = "0.0.0.0"
+	}
+
+	tickRate := 20 // default
+	if val := os.Getenv("TICK_RATE"); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			tickRate = i
+		}
+	}
+
+	config := shared.Config{
+		Port:     port,
+		Host:     host,
+		TickRate: tickRate,
+	}
+
+	log.Printf("Server config - Host: %s, Port: %s, TickRate: %d", host, port, tickRate)
+
+	return config
+}
 
 // Global player manager
 type PlayerManager struct {
@@ -82,10 +114,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-const TickRate = 20 // Ticks per second
-// Fixed timestep game loop - 20 TPS
-func gameLoop() {
-	ticker := time.NewTicker(1000 / TickRate * time.Millisecond) // 50ms = 20 TPS
+func gameLoop(tickRate int) {
+	ticker := time.NewTicker(time.Duration(1000/tickRate) * time.Millisecond)
 	defer ticker.Stop()
 
 	tick := 0
@@ -113,7 +143,9 @@ func gameLoop() {
 		// Log every 100 ticks (5 seconds)
 		if tick%100 == 0 {
 			log.Printf("Game tick %d - Broadcasting to %d players", tick, len(world.Players))
+			printStats()
 		}
+
 	}
 }
 
@@ -178,12 +210,27 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
-	// Start the game loop in a separate goroutine
-	go gameLoop()
+// Print memory, cpu usage and other stats
+func printStats() {
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	log.Printf("Memory Usage: Alloc = %v MiB, TotalAlloc = %v MiB, Sys = %v MiB, NumGC = %v",
+		memStats.Alloc/1024/1024, memStats.TotalAlloc/1024/1024, memStats.Sys/1024/1024, memStats.NumGC)
 
+	cpuUsage := runtime.NumCPU()
+	log.Printf("CPU Cores: %d", cpuUsage)
+}
+
+func main() {
+	// Load configuration
+	config := loadConfig()
+
+	// Start the game loop in a separate goroutine
+	go gameLoop(config.TickRate)
+
+	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	http.HandleFunc("/ws", handleConnection)
-	log.Println("Server starting on :8080...")
-	log.Println("Game loop running at 20 TPS...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Printf("Server starting on %s...", address)
+	log.Printf("Game loop running at %d TPS...", config.TickRate)
+	log.Fatal(http.ListenAndServe(address, nil))
 }
