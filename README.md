@@ -1,6 +1,12 @@
-# WebSocket Game Server on Kubernetes
+# WebSocket Game Server on Kubernetes 
 
 ## Overview
+
+This is a project to test new architecture appliable to 'https://github.com/iErcann/Notblox'
+
+Sample game server made to test perfs (Golang), and how scalable it can be to create new instance for each player. Right now this is a relay server, which could be highly scalable, let's see!
+
+
 A scalable WebSocket-based game server that:
 - Creates isolated game sessions
 - Runs in Docker containers
@@ -14,14 +20,16 @@ game-server/
     ├── cmd
     │   ├── client
     │   │   └── main.go
+    │   │   └── .env.example
     │   └── server
     │       └── main.go
+    │   │   └── .env.example
     ├── go.mod
     ├── go.sum
     ├── internal
     │   └── shared
     │       └── types.go
-├── Dockerfile           # Container build instructions
+├── Dockerfile           # Server build
 ├── k8s/
 │   ├── deployment.yaml  # K8s pod configuration
 │   ├── service.yaml     # Network exposure
@@ -29,35 +37,31 @@ game-server/
 └── README.md
 ```
 
-## Go Game Server (`cmd/server/main.go`)
+## Getting Started
+
+### Environment Configuration
+Create a `.env` file in client or server:
+```env
+SERVER_PORT=8080
+SERVER_HOST=0.0.0.0
+TICK_RATE=20
 ```
+
+### Running the Game Server
+```bash
 cd src
 go run cmd/server/main.go
 ```
 
-## Go Game Client (`cmd/client/main.go`)
-```
+### Running the Test Client
+```bash
 cd src
 go run cmd/client/main.go
 ```
 
-##  Dockerfile
-```dockerfile
-# Build stage
-FROM golang:1.21-alpine AS builder
-WORKDIR /app
-COPY go.mod ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /game-server
-
-# Runtime stage
-FROM alpine:latest
-WORKDIR /
-COPY --from=builder /game-server /game-server
-EXPOSE 8080
-ENTRYPOINT ["/game-server"]
-```
+### Building the Dockerfile
+docker build -t mygame/game-server:latest .
+docker run mygame/game-server
 
 ## 3. Kubernetes Manifests
 
