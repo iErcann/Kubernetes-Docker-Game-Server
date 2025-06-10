@@ -65,6 +65,29 @@ docker run mygame/game-server
 
 ## 3. Kubernetes Manifests
 
+### Minikube
+
+```bash
+# Install Minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+# Start your cluster
+minikube start --driver=docker
+```
+### kubectl - The Kubernetes command-line tool:
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+### Helm (Optional but recommended) - Package manager for Kubernetes:
+```
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+
 ### `k8s/deployment.yaml`
 ```yaml
 apiVersion: apps/v1

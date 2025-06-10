@@ -230,6 +230,12 @@ func main() {
 
 	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	http.HandleFunc("/ws", handleConnection)
+	// Health check endpoint
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
 	log.Printf("Server starting on %s...", address)
 	log.Printf("Game loop running at %d TPS...", config.TickRate)
 	log.Fatal(http.ListenAndServe(address, nil))
